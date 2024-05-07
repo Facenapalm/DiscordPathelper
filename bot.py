@@ -37,10 +37,14 @@ class MyClient(discord.Client):
             reply = request.submit()
             if 'categorymembers' in reply['query']:
                 result.extend([remove_prefix(pageinfo['title'], prefix) for pageinfo in reply['query']['categorymembers']])
-            if 'query-continue' not in reply:
+            if 'query-continue' in reply:
+                for key, value in reply['query-continue']['categorymembers'].items():
+                    request[key] = value
+            elif 'continue' in reply:
+                for key, value in reply['continue'].items():
+                    request[key] = value
+            else:
                 break
-            for key, value in reply['query-continue']['categorymembers'].items():
-                request[key] = value
         return result
 
     def form_pending_changes_report(self, catname, timestamp):
