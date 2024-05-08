@@ -105,18 +105,19 @@ class MyClient(discord.Client):
         return { 'content': content, 'embed': discord.Embed(colour=self.color, description=description) }
 
     async def on_ready(self):
-        self.site = pywikibot.Site()
-        self.site.login()
+        try:
+            self.site = pywikibot.Site()
+            self.site.login()
 
-        date = datetime.utcnow()
-        day_ago_timestamp = stringify_date(date - timedelta(days=1))
+            date = datetime.utcnow()
+            day_ago_timestamp = stringify_date(date - timedelta(days=1))
 
-        with open('config.json', encoding='utf-8') as config:
-            for command in json.load(config):
-                channel = self.get_channel(command['channel'])                
-                async with channel.typing():
-                    await channel.send(**self.form_pending_changes_report(command['category'], day_ago_timestamp))
-
-        await self.close()
+            with open('config.json', encoding='utf-8') as config:
+                for command in json.load(config):
+                    channel = self.get_channel(command['channel'])                
+                    async with channel.typing():
+                        await channel.send(**self.form_pending_changes_report(command['category'], day_ago_timestamp))
+        finally:
+            await self.close()
 
 MyClient(intents=discord.Intents.default()).run(open("./keys/discord.token").read())
