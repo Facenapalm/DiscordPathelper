@@ -1,5 +1,6 @@
 import re
 import json
+import asyncio
 import discord
 import pywikibot
 from sys import stderr
@@ -41,7 +42,7 @@ class MyClient(discord.Client):
     max_oldreviewed_results = 20
     max_unreviewed_results = 5
 
-    def get_category_members(self, source):
+    async def get_category_members(self, source):
         if 'type' not in source or source['type'] != 'category':
             raise InputError(f"Wrong type (expected `category`, got `{source.get('type', '???')}`), source: `{json.dumps(source)}`")
         if 'title' not in source:
@@ -87,13 +88,13 @@ class MyClient(discord.Client):
         # TODO: implement 'template'
     }
 
-    def form_pending_changes_report(self, sources):
+    async def form_pending_changes_report(self, sources):
         pagelist = []
         for source in sources:
             try:
                 if 'type' not in source or source['type'] not in self.source_handlers:
                     raise InputError(f"Unknown type `{source.get('type', '???')}`, source: `{json.dumps(source)}`")
-                pagelist += self.source_handlers[source['type']](self, source)
+                pagelist += await self.source_handlers[source['type']](self, source)
             except InputError as error:
                 print(f'Input ignored. {error}', file=stderr)
         pagelist = unique(pagelist)
@@ -106,7 +107,7 @@ class MyClient(discord.Client):
         unreviewed = []
         oldreviewed = []
         for i in range(0, len(pagelist), self.chunk_size):
-            print(len('|'.join(pagelist[i:i+self.chunk_size])))
+            await asyncio.sleep(0)
             parameters = {
                 'action': 'query',
                 'format': 'json',
@@ -166,7 +167,7 @@ class MyClient(discord.Client):
                 for command in json.load(config):
                     channel = self.get_channel(command['channel'])                
                     async with channel.typing():
-                        await channel.send(**self.form_pending_changes_report(command.get('sources', [])))
+                        await channel.send(**await self.form_pending_changes_report(command.get('sources', [])))
         except Exception as error:
             print(f'ERROR: {error}', file=stderr)
         finally:
